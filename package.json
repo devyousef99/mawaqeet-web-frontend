@@ -2,22 +2,27 @@
   "name": "mawaqeet",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "concurrently -n shell,admin,provider -c magenta,cyan,green \"npm run dev -w @mawaqeet/shell\" \"npm run dev -w @mawaqeet/admin\" \"npm run dev -w @mawaqeet/provider\"",
-    "dev:shell": "npm run dev -w @mawaqeet/shell",
-    "dev:admin": "npm run dev -w @mawaqeet/admin",
-    "dev:provider": "npm run dev -w @mawaqeet/provider",
-    "build": "npm run build -w @mawaqeet/admin && npm run build -w @mawaqeet/provider && npm run build -w @mawaqeet/shell",
-    "build:admin": "npm run build -w @mawaqeet/admin",
-    "build:provider": "npm run build -w @mawaqeet/provider",
-    "build:shell": "npm run build -w @mawaqeet/shell",
-    "lint": "npm run lint -w @mawaqeet/admin && npm run lint -w @mawaqeet/provider && npm run lint -w @mawaqeet/shell"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "lucide-react": "^1.28.0",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
