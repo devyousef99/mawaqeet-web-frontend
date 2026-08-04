@@ -53,16 +53,40 @@ npm run build
 npm run build:admin
 ```
 
-## Deploying
+## Deploying (Vercel)
 
-Deploy each app separately, then point the shell at the deployed zones:
+This repo contains **three apps, so it needs three Vercel projects** — one per app.
+There is no Next.js app at the repo root, so a single project pointed at the root
+fails with `The file "/vercel/path0/.next/routes-manifest.json" couldn't be found`.
+
+Create three projects from this same repository, changing only the **Root Directory**:
+
+| Vercel project | Root Directory | Purpose |
+|---|---|---|
+| `mawaqeet-admin` | `apps/admin` | admin zone |
+| `mawaqeet-provider` | `apps/provider` | provider zone |
+| `mawaqeet-shell` | `apps/shell` | host — attach your real domain here |
+
+Deploy **admin and provider first** so you have their URLs, then set these
+environment variables on the **shell** project only:
 
 ```bash
-ADMIN_DOMAIN=https://admin.mawaqeet.example
-PROVIDER_DOMAIN=https://provider.mawaqeet.example
+ADMIN_DOMAIN=https://mawaqeet-admin.vercel.app
+PROVIDER_DOMAIN=https://mawaqeet-provider.vercel.app
 ```
 
-Both default to their localhost dev ports when unset.
+The shell throws at build time if these are missing in production, rather than
+silently proxying to localhost. Point your customer-facing domain at the shell;
+users never visit the zone URLs directly.
+
+Each app has a `vercel.json` that installs from the workspace root so the shared
+`packages/*` resolve during the build.
+
+> **Note:** the zone URLs stay publicly reachable. If you need them locked to the
+> shell, put auth or [`vercelSkewProtection`](https://vercel.com/docs) / a shared
+> secret header in front of them — multi-zones does not do this for you.
+
+Locally, `ADMIN_DOMAIN` / `PROVIDER_DOMAIN` default to the dev ports and need no setup.
 
 ## Routes
 
