@@ -1,0 +1,45 @@
+/* Loaded here rather than via <link> in each app's layout: a stylesheet @import
+   keeps the font in one shared place and avoids next/no-page-custom-font.
+   Must come first — @import rules have to precede all other rules. */
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  /* Brand */
+  --color-brand: #1fb9a9;          /* Mawaqeet teal */
+  --color-brand-soft: #cff3ea;     /* active sidebar item */
+  --color-mint: #a8e3bb;           /* ON chips */
+  --color-mint-deep: #7fc99b;      /* SAVE buttons */
+  --color-coral: #f5a09a;          /* CANCEL buttons / OFF chips */
+  --color-coral-deep: #f4726a;     /* destructive */
+  --color-grape: #6c5ce7;          /* purple charts / login */
+  --color-aqua: #2ee6c6;           /* turquoise charts */
+  --color-sun: #f6c863;            /* pending yellow */
+  --color-ink: #2b2d33;
+  --color-fog: #ececec;            /* pill inputs */
+  --color-paper: #f7f8fa;          /* page bg */
+  --color-night: #17181a;          /* dark bg */
+  --color-night-2: #202226;        /* dark card */
+}
+
+html { font-family: var(--font-sans); }
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.dark body { background: #101113; color: #e8e9ec; }
+
+/* thin scrollbars for carousels */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
