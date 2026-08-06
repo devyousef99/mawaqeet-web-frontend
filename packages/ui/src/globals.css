@@ -1,0 +1,57 @@
+/* Loaded here rather than via <link> in each app's layout: a stylesheet @import
+   keeps the font in one shared place and avoids next/no-page-custom-font.
+   Must come first — @import rules have to precede all other rules. */
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap");
+@import "tailwindcss";
+
+/* Tailwind auto-detects sources relative to this file but skips node_modules —
+   and npm workspaces symlink packages/ui into node_modules, so the shared
+   components here were never scanned. Without this, utilities used ONLY by
+   packages/ui (e.g. the sidebar/header dark backgrounds) silently never compile.
+   Each app also scans its own src/ automatically. */
+@source "../";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Noto Sans Arabic sits after Nunito Sans so Latin glyphs keep the brand face
+     and Arabic text (and RTL mode) falls through to a font that supports it. */
+  --font-sans: "Nunito Sans", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  /* Brand */
+  --color-brand: #1fb9a9;          /* Mawaqeet teal */
+  --color-brand-soft: #cff3ea;     /* active sidebar item */
+  --color-mint: #a8e3bb;           /* ON chips */
+  --color-mint-deep: #7fc99b;      /* SAVE buttons */
+  --color-coral: #f5a09a;          /* CANCEL buttons / OFF chips */
+  --color-coral-deep: #f4726a;     /* destructive */
+  --color-grape: #6c5ce7;          /* purple charts / login */
+  --color-aqua: #2ee6c6;           /* turquoise charts */
+  --color-sun: #f6c863;            /* pending yellow */
+  --color-ink: #2b2d33;
+  --color-fog: #ececec;            /* pill inputs */
+  --color-paper: #f7f8fa;          /* page bg */
+  /* Named -1/-2 rather than night/night-2: when one token name is a prefix of
+     another, `bg-night` fails to resolve while `bg-night-2` works, which silently
+     left the sidebar and header white in dark mode. */
+  --color-night-1: #17181a;        /* dark bg  (chrome: sidebar, header) */
+  --color-night-2: #202226;        /* dark card */
+}
+
+html { font-family: var(--font-sans); }
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.dark body { background: #101113; color: #e8e9ec; }
+
+/* thin scrollbars for carousels */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

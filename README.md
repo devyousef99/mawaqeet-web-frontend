@@ -1,55 +1,115 @@
-# Mawaqeet — Admin & Provider Dashboard (Next.js)
+# Mawaqeet — Micro-frontend Dashboard (Next.js Multi-Zones)
 
-Appointment-booking platform with two independently editable role dashboards —
-**admin** and **provider** — in a single Next.js app, deployed as one project.
+Appointment-booking platform split into independently developed and deployed
+Next.js applications ("zones"), served under a single domain.
 
 ## Architecture
 
 ```
-src/
-├── app/
-│   ├── login/                 shared entry screen
-│   ├── (admin)/               ── admin role ──────────────
-│   │   ├── layout.tsx           admin chrome (own sidebar/topbar)
-│   │   ├── nav.ts               admin navigation (13 items)
-│   │   └── admin/…              admin's own pages
-│   └── (provider)/            ── provider role ───────────
-│       ├── layout.tsx           provider chrome
-│       ├── nav.tsx              provider navigation (9 items)
-│       └── provider/…           provider's own pages
-├── components/                shared primitives + form components
-└── lib/                       mock data, theme
+mawaqeet/
+├── apps/
+│   ├── shell/       :4100  host — owns /, /login, routes everything else
+│   ├── admin/       :4101  zone — owns /admin/*
+│   └── provider/    :4102  zone — owns /provider/*
+└── packages/
+    ├── ui/                 shared primitives + shell chrome + form components
+    ├── data/               mock data and shared types
+    └── config/             shared tsconfig base
 ```
 
-`(admin)` and `(provider)` are [route groups](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups)
-— the parentheses keep them out of the URL. Each group has its **own layout and
-its own navigation**, so the two roles render completely different chrome and can
-be modified independently. Their pages are separate files: editing
-`/provider/services` never touches `/admin/services`.
+Each zone is a full Next.js app with its own `package.json`, build, and deploy.
+**Admin and provider can be modified and shipped completely independently** — they
+share only what lives in `packages/`.
 
-Only `src/components` and `src/lib` are shared — the primitives you *want* fixed
-in one place (tables, pills, avatars, form bodies).
+This uses [Multi-Zones](https://nextjs.org/docs/app/guides/multi-zones), Next.js's
+own micro-frontend mechanism. (Module Federation is the other common approach, but
+it targets the Pages Router and does not support the App Router / RSC this project
+is built on.)
+
+The shell is the default zone: it holds the entry routes and proxies every other
+path to the zone that serves it via `rewrites` in
+[apps/shell/next.config.ts](apps/shell/next.config.ts). Each zone sets an
+`assetPrefix` (`/admin-static`, `/provider-static`) so their `_next` assets don't
+collide once they share a domain.
 
 ## Run it
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev          # starts all three apps together
 ```
 
-`npm run build && npm start` for production.
+Then open **http://localhost:4100** — the shell serves login and proxies `/admin`
+and `/provider` to their zones. Visiting a zone port directly (`:4101/admin`) also
+works and is faster when you're only working on one zone; a zone's bare root
+redirects to its own dashboard.
 
-## Deploying
+Individual apps:
 
-One Vercel project, default settings — Root Directory is the repo root and the
-framework preset is Next.js. No environment variables required.
+```bash
+npm run dev:shell
+npm run dev:admin
+npm run dev:provider
+```
+
+Build (all three, or one at a time):
+
+```bash
+npm run build
+npm run build:admin
+```
+
+## Deploying (Vercel)
+
+Three apps means **three Vercel projects** — one per app. This is inherent to
+multi-zones: independent deploys are the point. A single project pointed at the
+repo root fails with `The file "/vercel/path0/.next/routes-manifest.json"
+couldn't be found`, because there is no Next.js app at the root.
+
+Create three projects from this same repository, changing only the **Root Directory**:
+
+| Vercel project | Root Directory | Purpose |
+|---|---|---|
+| `mawaqeet-admin` | `apps/admin` | admin zone |
+| `mawaqeet-provider` | `apps/provider` | provider zone |
+| `mawaqeet-shell` | `apps/shell` | host — attach your real domain here |
+
+**Order matters on first setup.** The shell proxies to the other two, so it cannot
+build until it knows their URLs:
+
+1. Deploy `mawaqeet-admin` and `mawaqeet-provider`, and copy their URLs.
+2. On the **shell** project only, set:
+   ```bash
+   ADMIN_DOMAIN=https://mawaqeet-admin.vercel.app
+   PROVIDER_DOMAIN=https://mawaqeet-provider.vercel.app
+   ```
+3. Deploy `mawaqeet-shell`, and point your customer-facing domain at it.
+
+The shell **fails its build** with an explanatory error if these are missing in
+production, rather than silently proxying to localhost. After this one-time setup,
+all three deploy independently.
+
+Each app has a `vercel.json` that installs from the workspace root so the shared
+`packages/*` resolve during the build.
+
+> **Note:** the zone URLs stay publicly reachable — someone can hit
+> `mawaqeet-admin.vercel.app` directly, bypassing the shell. Multi-zones does not
+> prevent this. Put auth or a shared secret header in front of the zones before
+> real data goes in.
+
+Locally, `ADMIN_DOMAIN` / `PROVIDER_DOMAIN` default to the dev ports and need no setup.
 
 ## Routes
 
+### Shell (`apps/shell`)
 | Route | Screen |
 |---|---|
-| `/login` | Login — links into either role |
-| **Admin** | |
+| `/login` | Login — links through to either zone |
+| `/` | Redirects to `/login` |
+
+### Admin zone (`apps/admin`)
+| Route | Screen |
+|---|---|
 | `/admin` | Admin home — Today's Performance chart + 18 stat cards |
 | `/admin/reports` | Month / Year reports |
 | `/admin/appointments` (+`/new`, `/[id]`) | Appointments table, create form, detail with status timeline |
@@ -60,7 +120,10 @@ framework preset is Next.js. No environment variables required.
 | `/admin/users` (+`/new`) | User management |
 | `/admin/branches/new` | Branch creation with map |
 | `/admin/complains`, `/ratings`, `/notifications`, `/subscriptions`, `/settings` | Remaining admin sections |
-| **Provider** | |
+
+### Provider zone (`apps/provider`)
+| Route | Screen |
+|---|---|
 | `/provider` | Branch dashboard — weekly sales, stat cards, monthly bars, daily donut |
 | `/provider/reports` | Reports |
 | `/provider/appointments` (+`/new`, `/[id]`) | Appointments |
@@ -73,22 +136,71 @@ framework preset is Next.js. No environment variables required.
 
 ## Working in this repo
 
-- **Change one role only** → edit under `src/app/(admin)/` or `src/app/(provider)/`.
-  The other role is untouched.
-- **Change both** → edit `src/components`.
-- **Each role owns its navigation**: [(admin)/nav.ts](src/app/(admin)/nav.ts) and
-  [(provider)/nav.tsx](src/app/(provider)/nav.tsx). `Sidebar` renders whatever it's given.
-- Pages are duplicated per role on purpose, so the two can diverge freely.
+- **Change one role only** → edit that app under `apps/`. Nothing else is affected.
+- **Change both** → edit `packages/ui`. Both zones pick it up.
+- **Each zone owns its navigation**: [apps/admin/src/app/nav.ts](apps/admin/src/app/nav.ts)
+  and [apps/provider/src/app/nav.tsx](apps/provider/src/app/nav.tsx). The `Sidebar`
+  renders whatever nav it is given.
+- **Cross-zone links must be plain `<a>` tags**, not `next/link` — `Link` prefetches
+  and soft-navigates, which does not work between zones. Mark such nav entries
+  `external: true`.
+- Pages are duplicated per zone on purpose, so the two roles can diverge freely.
+  Shared *primitives* (tables, pills, avatars, forms) stay in `packages/ui`.
+
+## UI shell
+
+The header ([packages/ui/src/Topbar.tsx](packages/ui/src/Topbar.tsx)) carries the
+app-wide controls, and both zones get them automatically:
+
+| Control | Behaviour |
+|---|---|
+| ☰ Menu | Collapses the sidebar to a 64px icon rail (labels become hover tooltips) |
+| ☀ / 🌙 | Light / dark theme |
+| Languages + `LTR`/`RTL` | Flips text direction across the whole app |
+| 🔔 | Notifications |
+
+All three preferences persist to `localStorage` (`mw-theme`, `mw-dir`,
+`mw-collapsed`) and are applied by a small pre-hydration script
+([PrefsScript.tsx](packages/ui/src/PrefsScript.tsx)) so a saved dark or RTL
+preference doesn't flash the wrong way on first paint.
+
+### RTL
+
+Direction is driven by `dir` on `<html>`. Layout styles use **CSS logical
+properties** (`ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`, `border-e`) rather than
+physical ones (`ml-`, `left-`), so the entire UI mirrors automatically — no
+duplicated stylesheets. When adding UI:
+
+- Use `ms-4`, not `ml-4`; `start-0`, not `left-0`; `text-start`, not `text-left`.
+- For inline styles use `insetInlineStart`, not `left`.
+- For genuinely directional glyphs (arrows), add the `rtl:` variant —
+  e.g. `rtl:rotate-180`.
+
+Purely decorative, symmetric elements (the gradient-card blobs) intentionally keep
+physical positioning.
+
+### Theming gotcha (important)
+
+Tailwind scans for class names relative to the CSS file but **skips
+`node_modules`** — and npm workspaces symlink `packages/ui` into `node_modules`.
+Without the explicit `@source "../";` in
+[globals.css](packages/ui/src/globals.css), any utility used *only* inside
+`packages/ui` silently never compiles, so the component renders unstyled (this is
+what once left the sidebar and header white in dark mode). Keep that directive.
+
+Recharts styles tooltips with inline styles that `dark:` cannot reach, so charts
+pull theme-aware values from [`useChartTheme()`](packages/ui/src/chart.tsx)
+instead of hard-coded hex colours.
 
 ## Notes
 
-- **Dark mode**: sidebar toggle (and on login); persisted to localStorage.
-- **Design tokens**: `src/app/globals.css` (`--color-brand`, `--color-mint`,
+- **Dark mode**: header toggle (and on login); persisted to localStorage.
+- **Design tokens**: `packages/ui/src/globals.css` (`--color-brand`, `--color-mint`,
   `--color-coral`, `--color-grape`…). Font: Nunito Sans.
-- **Mock data**: `src/lib/data.ts` — swap for your API.
-- **Auth is a mock**: login just links into each role. Add real auth (and route
-  protection) before this handles real data.
+- **Mock data**: `packages/data/src/index.ts` — swap for your API.
+- **Auth is a mock**: login just links into each zone. Add real auth (and a session
+  the zones share) before this handles real data.
 - Avatars are generated initials (no external images). Label spellings intentionally
   match the Figma ("Subscribtions", "TUESEDAY"…).
 
-Stack: Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind v4 · recharts · lucide-react.
+Stack: Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind v4 · recharts · lucide-react · npm workspaces.
