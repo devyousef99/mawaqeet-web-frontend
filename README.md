@@ -59,45 +59,41 @@ npm run build
 npm run build:admin
 ```
 
-## Deploying (Vercel)
+## Deploying (Vercel Microfrontends)
 
-Three apps means **three Vercel projects** — one per app. This is inherent to
-multi-zones: independent deploys are the point. A single project pointed at the
-repo root fails with `The file "/vercel/path0/.next/routes-manifest.json"
-couldn't be found`, because there is no Next.js app at the root.
+The three apps are joined into one domain by **Vercel Microfrontends**. Path
+routing is declared in [apps/shell/microfrontends.json](apps/shell/microfrontends.json)
+and handled by Vercel, so no app contains proxy rewrites of its own.
 
-Create three projects from this same repository, changing only the **Root Directory**:
+Each app is still its own Vercel project, differing only by **Root Directory**:
 
-| Vercel project | Root Directory | Purpose |
+| Vercel project | Root Directory | Role |
 |---|---|---|
-| `mawaqeet-admin` | `apps/admin` | admin zone |
-| `mawaqeet-provider` | `apps/provider` | provider zone |
-| `mawaqeet-shell` | `apps/shell` | host — attach your real domain here |
+| `shell` | `apps/shell` | default app — owns `/` and `/login` |
+| `admin` | `apps/admin` | routed `/admin/:path*` |
+| `provider` | `apps/provider` | routed `/provider/:path*` |
 
-**Order matters on first setup.** The shell proxies to the other two, so it cannot
-build until it knows their URLs:
+> The keys in `microfrontends.json` **must match the Vercel project names
+> exactly**. Because the workspace packages are named `@mawaqeet/*`, each entry
+> also sets `packageName` so the local proxy can map config → running app.
 
-1. Deploy `mawaqeet-admin` and `mawaqeet-provider`, and copy their URLs.
-2. On the **shell** project only, set:
-   ```bash
-   ADMIN_DOMAIN=https://mawaqeet-admin.vercel.app
-   PROVIDER_DOMAIN=https://mawaqeet-provider.vercel.app
-   ```
-3. Deploy `mawaqeet-shell`, and point your customer-facing domain at it.
+Dashboard setup (one time):
 
-The shell **fails its build** with an explanatory error if these are missing in
-production, rather than silently proxying to localhost. After this one-time setup,
-all three deploy independently.
+1. Create a **Microfrontends group** and add all three projects.
+2. Set **shell** as the default app.
+3. Deploy to **Preview** to verify, then promote to production.
+4. Attach your customer-facing domain to the **shell** project.
 
-Each app has a `vercel.json` that installs from the workspace root so the shared
-`packages/*` resolve during the build.
+`withMicrofrontends` injects `assetPrefix` and routing automatically — never set
+`assetPrefix` manually, and **`basePath` is not supported**. Cross-app links stay
+plain relative paths (`/admin`, `/provider`) so routing resolves on its own.
 
-> **Note:** the zone URLs stay publicly reachable — someone can hit
-> `mawaqeet-admin.vercel.app` directly, bypassing the shell. Multi-zones does not
-> prevent this. Put auth or a shared secret header in front of the zones before
-> real data goes in.
+Each app also has a `vercel.json` that installs from the workspace root so the
+shared `packages/*` resolve during the build.
 
-Locally, `ADMIN_DOMAIN` / `PROVIDER_DOMAIN` default to the dev ports and need no setup.
+> **Note:** the individual project URLs stay publicly reachable, so a zone can be
+> hit directly, bypassing the shell. Put auth in front of them before real data
+> goes in.
 
 ## Routes
 

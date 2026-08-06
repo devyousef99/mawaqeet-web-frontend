@@ -1,12 +1,12 @@
+import { withMicrofrontends } from "@vercel/microfrontends/next/config";
 import type { NextConfig } from "next";
 
 /**
- * Admin zone. Serves every /admin/* path.
- * assetPrefix keeps this zone's /_next assets from colliding with the other
- * zones' assets once the shell proxies them all onto one domain.
+ * Admin microfrontend. Serves every /admin/* path.
+ *
+ * Asset prefixing is handled by withMicrofrontends — do not set assetPrefix
+ * manually, and do not add basePath (unsupported with Vercel Microfrontends).
  */
-const nextConfig: NextConfig = {
-  assetPrefix: "/admin-static",
-};
+const nextConfig: NextConfig = {};
 
-export default nextConfig;
+export default withMicrofrontends(nextConfig);
