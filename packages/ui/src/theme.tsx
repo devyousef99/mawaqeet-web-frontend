@@ -8,15 +8,19 @@ type Ctx = {
   toggle: () => void;
   dir: Direction;
   toggleDir: () => void;
-  /** sidebar collapsed to an icon-only rail */
+  /** sidebar collapsed to an icon-only rail (desktop, persisted) */
   collapsed: boolean;
   toggleCollapsed: () => void;
+  /** off-canvas drawer open (below the lg breakpoint, not persisted) */
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
 };
 
 const ThemeCtx = createContext<Ctx>({
   dark: false, toggle: () => {},
   dir: "ltr", toggleDir: () => {},
   collapsed: false, toggleCollapsed: () => {},
+  mobileOpen: false, setMobileOpen: () => {},
 });
 
 /** Read persisted prefs during the first client render rather than in an effect,
@@ -36,6 +40,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [dir, setDir] = useState<Direction>(() =>
     readStored<Direction>("mw-dir", v => (v === "rtl" ? "rtl" : "ltr"), "ltr"));
   const [collapsed, setCollapsed] = useState(() => readStored("mw-collapsed", v => v === "1", false));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  /**
+   * The server always renders the defaults, but the client's lazy initialisers
+   * above read localStorage — so any component rendering text from these values
+   * (e.g. a "Dark Mode" / "Light Mode" label) would hydrate with a mismatch.
+   * Exposing the defaults until after mount keeps the first client render
+   * identical to the server's. There is no flash: PrefsScript has already
+   * applied the real theme/dir to <html> before first paint.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -55,13 +71,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   const value = useMemo<Ctx>(() => ({
-    dark,
+    dark: mounted ? dark : false,
     toggle: () => setDark(d => !d),
-    dir,
+    dir: mounted ? dir : "ltr",
     toggleDir: () => setDir(d => (d === "ltr" ? "rtl" : "ltr")),
-    collapsed,
+    collapsed: mounted ? collapsed : false,
     toggleCollapsed: () => setCollapsed(c => !c),
-  }), [dark, dir, collapsed]);
+    mobileOpen,
+    setMobileOpen,
+  }), [mounted, dark, dir, collapsed, mobileOpen]);
 
   return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;
 }

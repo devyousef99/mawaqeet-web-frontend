@@ -12,37 +12,160 @@ import { ChevronDown, X } from "lucide-react";
 
 /** Labelled <select> styled like the project's pill controls. */
 export function SelectField<T extends string | number>({
-  label, value, onChange, options, className = "",
+  label, value, onChange, options, className = "", tone = "gray", placeholder, center = false, name,
 }: {
   label?: string;
   value: T;
   onChange: (value: T) => void;
   options: { value: T; label: string }[];
   className?: string;
+  /** gray = filter pills, mint = the green form pills */
+  tone?: "gray" | "mint";
+  /** Rendered as a disabled first option when value is "" / 0. */
+  placeholder?: string;
+  center?: boolean;
+  name?: string;
 }) {
   const isNumeric = typeof value === "number";
+  const tones = tone === "mint"
+    ? "bg-mint/70 text-emerald-900 dark:bg-mint/20 dark:text-mint"
+    : "bg-fog text-neutral-700 dark:bg-white/10 dark:text-neutral-200";
   return (
-    <label className={`flex flex-col gap-1.5 ${className}`}>
+    <label className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
       {label && (
         <span className="text-xs font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
           {label}
         </span>
       )}
-      <span className="relative">
+      <span className="relative block">
         <select
+          name={name}
           value={value}
           onChange={e => onChange((isNumeric ? Number(e.target.value) : e.target.value) as T)}
-          className="h-11 w-full appearance-none rounded-lg bg-fog ps-4 pe-10 text-[14px] font-bold text-neutral-700 outline-none transition-shadow focus:ring-2 focus:ring-brand/50 dark:bg-white/10 dark:text-neutral-200"
+          className={`h-11 w-full cursor-pointer appearance-none truncate rounded-lg ps-4 pe-10 text-[13px] font-bold tracking-wide outline-none transition-shadow focus:ring-2 focus:ring-brand/50 ${center ? "text-center" : ""} ${tones}`}
         >
+          {placeholder && (
+            <option value="" disabled className="bg-white text-neutral-500 dark:bg-night-2">{placeholder}</option>
+          )}
           {options.map(o => (
-            <option key={String(o.value)} value={o.value} className="bg-white dark:bg-night-2">
+            <option key={String(o.value)} value={o.value} className="bg-white text-neutral-800 dark:bg-night-2 dark:text-neutral-100">
               {o.label}
             </option>
           ))}
         </select>
-        <ChevronDown className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+        <ChevronDown className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 opacity-70" />
       </span>
     </label>
+  );
+}
+
+/** Controlled text / number input in the project's pill or boxed styling. */
+export function TextField({
+  label, value, onChange, placeholder, type = "text", className = "", variant = "pill", center = false, min, step, required,
+}: {
+  label?: string;
+  value: string | number;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: "text" | "number" | "password" | "tel" | "date";
+  className?: string;
+  variant?: "pill" | "box";
+  center?: boolean;
+  min?: number;
+  step?: number;
+  required?: boolean;
+}) {
+  const styles = variant === "pill"
+    ? "h-12 rounded-full bg-fog px-6 text-[14px] font-bold uppercase text-neutral-700 placeholder:normal-case placeholder:uppercase placeholder:tracking-wide placeholder:text-neutral-400 dark:bg-white/10 dark:text-neutral-200"
+    : "h-12 rounded border border-neutral-300 px-4 text-lg font-bold text-neutral-700 shadow-inner dark:border-white/20 dark:bg-transparent dark:text-neutral-200";
+  return (
+    <label className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
+      {label && (
+        <span className="text-xs font-bold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">{label}</span>
+      )}
+      <input
+        type={type}
+        value={value}
+        min={min}
+        step={step}
+        required={required}
+        placeholder={placeholder}
+        onChange={e => onChange(e.target.value)}
+        className={`w-full outline-none transition-shadow focus:ring-2 focus:ring-brand/50 ${center ? "text-center" : ""} ${styles}`}
+      />
+    </label>
+  );
+}
+
+/** Controlled checkbox — the project's `Check` owns its own state; this one doesn't. */
+export function CheckField({
+  checked, onChange, label, size = 22, className = "",
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: React.ReactNode;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <label className={`inline-flex cursor-pointer select-none items-center gap-3 ${className}`}>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`flex shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors ${
+          checked ? "border-slate-800 bg-slate-800 text-white dark:border-teal-500 dark:bg-teal-600" : "border-slate-400 bg-white dark:bg-transparent"
+        }`}
+        style={{ width: size, height: size }}
+      >
+        {checked && (
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12.5 9.5 18 20 6.5" />
+          </svg>
+        )}
+      </button>
+      {label && <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-100">{label}</span>}
+    </label>
+  );
+}
+
+/** Controlled ON / OFF chip (the day toggles). */
+export function DayToggle({
+  on, onChange, className = "",
+}: {
+  on: boolean;
+  onChange: (on: boolean) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={() => onChange(!on)}
+      className={`flex h-11 w-full items-center justify-between rounded-lg px-4 text-sm font-extrabold tracking-wide transition-colors ${
+        on ? "bg-mint text-emerald-900" : "bg-coral text-rose-900"
+      } ${className}`}
+    >
+      <span className="mx-auto">{on ? "ON" : "OFF"}</span>
+      <ChevronDown className="size-4 opacity-60" />
+    </button>
+  );
+}
+
+/** Small inline status message shown after save / validation. */
+export function FormNotice({ kind, children }: { kind: "error" | "success"; children: React.ReactNode }) {
+  return (
+    <div
+      role={kind === "error" ? "alert" : "status"}
+      className={`mt-6 rounded-lg px-4 py-3 text-sm font-bold ${
+        kind === "error"
+          ? "bg-coral/30 text-rose-900 dark:bg-coral-deep/20 dark:text-coral"
+          : "bg-mint/40 text-emerald-900 dark:bg-mint/15 dark:text-mint"
+      }`}
+    >
+      {children}
+    </div>
   );
 }
 

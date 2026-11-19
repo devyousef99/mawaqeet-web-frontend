@@ -36,17 +36,27 @@ collide once they share a domain.
 
 ```bash
 npm install
-npm run dev          # starts all three apps together
+npm run dev          # starts the local proxy + all three apps
 ```
 
-Then open **http://localhost:4100** — the shell serves login and proxies `/admin`
-and `/provider` to their zones. Visiting a zone port directly (`:4101/admin`) also
-works and is faster when you're only working on one zone; a zone's bare root
-redirects to its own dashboard.
+Then open **http://localhost:4000** — the **Microfrontends local proxy**. This is
+the port to use: it reproduces what Vercel does in production, routing `/admin`
+and `/provider` to their apps so everything is on one origin.
 
-Individual apps:
+| Port | What |
+|---|---|
+| **4000** | **local proxy — use this one** |
+| 4100 | shell only (`/`, `/login`; `/admin` and `/provider` 404 here) |
+| 4101 | admin only (`/admin/*`) |
+| 4102 | provider only (`/provider/*`) |
+
+Hitting an app's own port directly works when you're focused on that one app, but
+cross-app links only resolve through the proxy.
+
+Individual pieces:
 
 ```bash
+npm run dev:proxy
 npm run dev:shell
 npm run dev:admin
 npm run dev:provider

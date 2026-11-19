@@ -98,3 +98,58 @@ export const adminStats = [
 ];
 
 export const days = ["SUNDAY", "MONDAY", "TUESEDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+
+/* ------------------------------------------------------------------ */
+/*  Dummy option lists for dropdowns (testing only)                    */
+/* ------------------------------------------------------------------ */
+
+export type Option<T extends string | number = string> = { value: T; label: string };
+const opts = (xs: readonly string[]): Option[] => xs.map(x => ({ value: x, label: x }));
+
+export const categoryOptions = opts(["MASSAGE", "BODY CARE", "BARBER", "BEAUTY", "DENTAL", "SPA"]);
+export const serviceTypeOptions = categoryOptions;
+export const branchOptions = opts(["MEDINA", "JEDDAH", "RIYADH", "MAKKAH", "DAMMAM"]);
+export const providerOptions = opts(["ROYAL SPA", "GOLDEN HANDS", "BLUE LOTUS", "OASIS CARE"]);
+export const currencyOptions = opts(["SR", "USD", "AED"]);
+export const durationUnitOptions = opts(["MINUTES", "HOURS"]);
+export const meridiemOptions = opts(["AM", "PM"]);
+export const hourOptions: Option<number>[] = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1) }));
+export const countOptions = (max: number, min = 1): Option<number>[] =>
+  Array.from({ length: max - min + 1 }, (_, i) => ({ value: min + i, label: String(min + i) }));
+export const approvalOptions = opts(["FULL PAYMENT", "DEPOSIT", "NO PAYMENT", "ADMIN APPROVAL"]);
+export const dayOptions = opts(days);
+export const jobOptions = opts(["MASSAGE", "WASHER", "NAILS SPECIALIST", "FACIAL", "BARBER", "DENTIST", "WORKER"]);
+export const workingStatusOptions = opts(["AVAILABLE", "VACATION", "WORKING", "BOOKED"]);
+export const userTypeOptions = opts(["CUSTOMER", "PROVIDER", "BRANCH", "CUSTOMER CARE"]);
+export const subscriptionTypeOptions = opts(["BASIC", "PRO", "ENTERPRISE"]);
+export const cityOptions = branchOptions;
+export const monthOptions = opts(["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"]);
+
+/** Working-hour slots a provider can open for booking. */
+export const timeSlots = ["10 AM", "11 AM", "12 PM", "01 PM", "02 PM", "03 PM", "04 PM", "05 PM", "06 PM", "07 PM", "08 PM", "09 PM", "10 PM"];
+
+export const serviceIconOptions = opts(["massage", "hotstone", "nails", "beard", "bath"]);
+
+/* ------------------------------------------------------------------ */
+/*  Record shapes used by the localStorage-backed demo store           */
+/* ------------------------------------------------------------------ */
+export type Employee = (typeof employees)[number];
+export type Service = (typeof services)[number];
+export type Appointment = (typeof appointments)[number];
+export type LoyalCustomer = (typeof loyalCustomers)[number];
+export type Complain = (typeof complains)[number];
+export type Subscriber = (typeof subscribers)[number];
+export type Promotion = (typeof promotions)[number];
+
+/** A day-plan created from the "Create Appointments" screen. */
+export type AppointmentPlan = {
+  id: string;
+  category: string;
+  service: string;
+  employees: number;
+  day: string;
+  approval: string;
+  slots: string[];
+  repeat: { week: boolean; month: boolean; year: boolean };
+  createdAt: string;
+};

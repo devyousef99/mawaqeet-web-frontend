@@ -4,7 +4,7 @@ import { PillSelect } from "./ui";
 
 export function PageCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl bg-white p-8 shadow-[0_1px_4px_rgba(15,23,42,0.06)] dark:bg-night-2 ${className}`}>
+    <div className={`rounded-xl bg-white p-5 shadow-[0_1px_4px_rgba(15,23,42,0.06)] sm:p-8 dark:bg-night-2 ${className}`}>
       {children}
     </div>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, MoreVertical } from "lucide-react";
 import type { Status } from "@mawaqeet/data";
 
@@ -106,17 +106,29 @@ export function Check({ initial = false, size = 22 }: { initial?: boolean; size?
 }
 
 /* ---------- cancel / save action bar ---------- */
-export function ActionBar({ remove, removeLabel = "REMOVE" }: { remove?: boolean; removeLabel?: string }) {
+export function ActionBar({
+  remove, removeLabel = "REMOVE", onCancel, onSave, onRemove, saveLabel = "SAVE", cancelLabel = "CANCEL", disabled,
+}: {
+  remove?: boolean;
+  removeLabel?: string;
+  onCancel?: () => void;
+  onSave?: () => void;
+  onRemove?: () => void;
+  saveLabel?: string;
+  cancelLabel?: string;
+  disabled?: boolean;
+}) {
+  const base = "flex h-12 items-center justify-center gap-2 rounded-lg text-base font-extrabold tracking-wider text-white shadow transition-transform hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
   return (
-    <div className="mt-12 flex items-center gap-8">
-      <button className="h-12 w-56 rounded-lg bg-coral text-base font-extrabold tracking-wider text-white shadow transition-transform hover:brightness-105 active:scale-[0.98]">
-        CANCEL
+    <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+      <button type="button" onClick={onCancel} className={`${base} bg-coral sm:w-48 lg:w-56`}>
+        {cancelLabel}
       </button>
-      <button className="h-12 w-56 rounded-lg bg-mint-deep text-base font-extrabold tracking-wider text-white shadow transition-transform hover:brightness-105 active:scale-[0.98]">
-        SAVE
+      <button type={onSave ? "button" : "submit"} onClick={onSave} disabled={disabled} className={`${base} bg-mint-deep sm:w-48 lg:w-56`}>
+        {saveLabel}
       </button>
       {remove && (
-        <button className="ml-auto flex h-12 items-center gap-2 rounded-lg bg-coral-deep px-6 text-base font-extrabold tracking-wider text-white shadow transition-transform hover:brightness-105 active:scale-[0.98]">
+        <button type="button" onClick={onRemove} className={`${base} bg-coral-deep px-6 sm:ms-auto`}>
           {removeLabel}
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14" /></svg>
         </button>
@@ -125,20 +137,90 @@ export function ActionBar({ remove, removeLabel = "REMOVE" }: { remove?: boolean
   );
 }
 
-export const Kebab = () => (
-  <button className="rounded p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/10" aria-label="Row actions">
+export const Kebab = ({ onClick }: { onClick?: () => void }) => (
+  <button type="button" onClick={onClick} className="rounded p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/10" aria-label="Row actions">
     <MoreVertical className="size-5" />
   </button>
 );
 
-/* ---------- upload dashed box ---------- */
-export function UploadBox({ label }: { label: string }) {
+/* ---------- row actions menu (working kebab) ---------- */
+export type RowAction = { label: string; onClick: () => void; tone?: "default" | "danger"; icon?: React.ReactNode };
+
+export function RowMenu({ actions, align = "end" }: { actions: RowAction[]; align?: "start" | "end" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  if (!actions.length) return null;
   return (
-    <button className="flex h-24 w-72 items-center justify-center gap-4 rounded-md border-2 border-dashed border-neutral-400 text-sm font-extrabold tracking-wide text-neutral-800 transition-colors hover:border-grape hover:text-grape dark:border-neutral-500 dark:text-neutral-200">
-      <svg viewBox="0 0 24 24" className="size-9 text-grape" fill="none" stroke="currentColor" strokeWidth="1.6">
-        <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M12 15V8m0 0-3 3m3-3 3 3" />
-      </svg>
-      <span className="max-w-40 text-start leading-snug">{label}</span>
-    </button>
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Row actions"
+        className={`rounded p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/10 ${open ? "bg-neutral-100 dark:bg-white/10" : ""}`}
+      >
+        <MoreVertical className="size-5" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className={`absolute top-full z-30 mt-1 min-w-40 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 text-start shadow-xl dark:border-white/10 dark:bg-night-2 ${align === "end" ? "end-0" : "start-0"}`}
+        >
+          {actions.map(a => (
+            <button
+              key={a.label}
+              role="menuitem"
+              type="button"
+              onClick={() => { setOpen(false); a.onClick(); }}
+              className={`flex w-full items-center gap-2 px-4 py-2 text-sm font-bold transition-colors hover:bg-neutral-100 dark:hover:bg-white/10 ${
+                a.tone === "danger" ? "text-coral-deep" : "text-neutral-700 dark:text-neutral-200"
+              }`}
+            >
+              {a.icon}{a.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- upload dashed box ---------- */
+export function UploadBox({ label, value, onChange, className = "" }: { label: string; value?: string; onChange?: (dataUrl: string) => void; className?: string }) {
+  const input = useRef<HTMLInputElement>(null);
+  const pick = (file?: File) => {
+    if (!file || !onChange) return;
+    const r = new FileReader();
+    r.onload = () => onChange(String(r.result));
+    r.readAsDataURL(file);
+  };
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => input.current?.click()}
+        className={`flex h-24 w-full max-w-72 items-center justify-center gap-4 overflow-hidden rounded-md border-2 border-dashed border-neutral-400 px-4 text-sm font-extrabold tracking-wide text-neutral-800 transition-colors hover:border-grape hover:text-grape dark:border-neutral-500 dark:text-neutral-200 ${className}`}
+      >
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="" className="size-16 shrink-0 rounded-md object-cover" />
+        ) : (
+          <svg viewBox="0 0 24 24" className="size-9 shrink-0 text-grape" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M12 15V8m0 0-3 3m3-3 3 3" />
+          </svg>
+        )}
+        <span className="max-w-40 text-start leading-snug">{value ? "CHANGE IMAGE" : label}</span>
+      </button>
+      {onChange && <input ref={input} type="file" accept="image/*" className="hidden" onChange={e => pick(e.target.files?.[0])} />}
+    </>
   );
 }

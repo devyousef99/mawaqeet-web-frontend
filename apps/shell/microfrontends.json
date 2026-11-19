@@ -1,19 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/microfrontends.json",
   "applications": {
-    "mawaqeet-web-frontend-shell": {
+    "shell": {
       "packageName": "@mawaqeet/shell",
       "development": {
         "local": 4100,
         "fallback": "mawaqeet-shell.vercel.app"
       }
     },
-    "mawaqeet-web-frontend-admin": {
+    "admin": {
       "packageName": "@mawaqeet/admin",
       "development": { "local": 4101 },
       "routing": [{ "paths": ["/admin/:path*"] }]
     },
-    "mawaqeet-web-frontend-provider": {
+    "provider": {
       "packageName": "@mawaqeet/provider",
       "development": { "local": 4102 },
       "routing": [{ "paths": ["/provider/:path*"] }]

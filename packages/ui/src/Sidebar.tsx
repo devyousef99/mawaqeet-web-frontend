@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { useTheme } from "./theme";
 
@@ -29,19 +29,31 @@ export type SidebarBrand = {
 
 export function Sidebar({ nav, brand }: { nav: NavItem[]; brand: SidebarBrand }) {
   const path = usePathname();
-  const { collapsed } = useTheme();
+  const { collapsed, mobileOpen, setMobileOpen } = useTheme();
+  const close = () => setMobileOpen(false);
 
   return (
+    <>
+      {/* Backdrop for the off-canvas drawer (below lg only) */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={close} aria-hidden />
+      )}
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col border-e border-neutral-200/70 bg-white transition-[width] duration-200 ease-out dark:border-white/5 dark:bg-night-1 ${
-        collapsed ? "w-20" : "w-64"
-      }`}
+      onKeyDown={e => { if (e.key === "Escape") close(); }}
+      className={`fixed inset-y-0 start-0 z-40 flex h-screen w-64 shrink-0 flex-col border-e border-neutral-200/70 bg-white shadow-2xl transition-[transform,width] duration-200 ease-out dark:border-white/5 dark:bg-night-1
+        lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 lg:shadow-none ${
+        mobileOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"
+      } ${collapsed ? "lg:w-20" : "lg:w-64"}`}
     >
-      <div className={`py-5 ${collapsed ? "px-0" : "px-5"}`}>
-        <Logo compact={collapsed} />
+      <div className={`flex items-center justify-between py-5 ${collapsed ? "lg:px-0" : ""} px-5`}>
+        <span className={collapsed ? "lg:hidden" : ""}><Logo /></span>
+        {collapsed && <span className="hidden w-full lg:block"><Logo compact /></span>}
+        <button type="button" onClick={close} className="rounded-full p-1.5 text-neutral-500 hover:bg-neutral-100 lg:hidden dark:hover:bg-white/10" aria-label="Close menu">
+          <X className="size-5" />
+        </button>
       </div>
 
-      <div className={`flex items-center gap-3 pb-5 ${collapsed ? "justify-center px-0" : "px-5"}`}>
+      <div className={`flex items-center gap-3 pb-5 px-5 ${collapsed ? "lg:justify-center lg:px-0" : ""}`}>
         {brand.showBadge && (
           <div className="relative">
             <span className="flex size-11 items-center justify-center rounded-lg border border-neutral-300 dark:border-neutral-600">
@@ -50,8 +62,8 @@ export function Sidebar({ nav, brand }: { nav: NavItem[]; brand: SidebarBrand })
             <span className="absolute -bottom-1 -start-1 size-3 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-night-1" />
           </div>
         )}
-        {!collapsed && (
-          <div className="text-[11px] font-bold uppercase tracking-wide text-neutral-700 dark:text-neutral-200">
+        {(
+          <div className={`text-[11px] font-bold uppercase tracking-wide text-neutral-700 dark:text-neutral-200 ${collapsed ? "lg:hidden" : ""}`}>
             {brand.title}
             {brand.subtitle && <div className="mt-0.5 font-semibold text-neutral-400">{brand.subtitle}</div>}
           </div>
@@ -61,8 +73,8 @@ export function Sidebar({ nav, brand }: { nav: NavItem[]; brand: SidebarBrand })
       <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto overflow-x-hidden pb-4">
         {nav.map(({ href, label, Icon, exact, external }) => {
           const active = external ? false : exact ? path === href : path.startsWith(href);
-          const cls = `group relative flex items-center py-3 text-[15px] font-semibold transition-colors ${
-            collapsed ? "justify-center px-0" : "gap-4 px-6"
+          const cls = `group relative flex items-center gap-4 px-6 py-3 text-[15px] font-semibold transition-colors ${
+            collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""
           } ${
             active
               ? "bg-brand-soft text-neutral-800 dark:bg-white/10 dark:text-white"
@@ -72,30 +84,27 @@ export function Sidebar({ nav, brand }: { nav: NavItem[]; brand: SidebarBrand })
             <>
               {active && <span className="absolute inset-y-0 start-0 w-1 rounded-e bg-brand" />}
               <Icon className={`size-5 shrink-0 ${active ? "text-brand" : "text-neutral-400"}`} />
-              {collapsed ? (
-                // Accessible name survives collapse, and a hover tooltip keeps the
-                // rail usable without expanding it.
-                <>
-                  <span className="sr-only">{label}</span>
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute start-full z-30 ms-2 hidden whitespace-nowrap rounded-md bg-neutral-800 px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg group-hover:block dark:bg-neutral-700"
-                  >
-                    {label}
-                  </span>
-                </>
-              ) : (
-                <span className="leading-tight">{label}</span>
+              {/* Label always shows in the mobile drawer; on desktop it hides when
+                  collapsed and a hover tooltip keeps the rail usable. */}
+              <span className={`leading-tight ${collapsed ? "lg:sr-only" : ""}`}>{label}</span>
+              {collapsed && (
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute start-full z-30 ms-2 hidden whitespace-nowrap rounded-md bg-neutral-800 px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg lg:group-hover:block dark:bg-neutral-700"
+                >
+                  {label}
+                </span>
               )}
             </>
           );
           return external ? (
-            <a key={href + label} href={href} className={cls} title={collapsed ? label : undefined}>{inner}</a>
+            <a key={href + label} href={href} onClick={close} className={cls} title={collapsed ? label : undefined}>{inner}</a>
           ) : (
-            <Link key={href + label} href={href} className={cls} title={collapsed ? label : undefined}>{inner}</Link>
+            <Link key={href + label} href={href} onClick={close} className={cls} title={collapsed ? label : undefined}>{inner}</Link>
           );
         })}
       </nav>
     </aside>
+    </>
   );
 }
